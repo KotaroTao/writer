@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 医院情報
+model Clinic {
+  id          String   @id @default(cuid())
+  name        String   // 医院名
+  url         String   // ホームページURL
+  address     String   // 住所
+  phone       String   // 電話番号
+  targetArea  String?  // 対策地域名
+  description String?  // 医院の特徴・説明
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  treatments ClinicTreatment[]
+  articles   Article[]
+}
+
+// 診療項目カテゴリ
+model TreatmentCategory {
+  id                 String   @id @default(cuid())
+  name               String   @unique // 項目名（矯正、インプラント等）
+  description        String?  // 説明
+  defaultPriorities  String   @default("[]") // JSONとして保存（デフォルト優先設定）
+  createdAt          DateTime @default(now())
+
+  clinicTreatments ClinicTreatment[]
+}
+
+// 医院別診療設定
+model ClinicTreatment {
+  id         String   @id @default(cuid())
+  clinicId   String
+  categoryId String
+  priorities String   @default("[]") // JSONとして保存（優先内容設定）
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  clinic   Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  category TreatmentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, categoryId])
+}
+
+// 生成記事
+model Article {
+  id              String   @id @default(cuid())
+  clinicId        String?
+  title           String   // タイトル
+  content         String   // 本文
+  metaTitle       String?  // SEOタイトル
+  metaDescription String?  // メタ説明
+  keywords        String   @default("[]") // JSONとして保存
+  wordCount       Int      // 文字数
+  articleType     String   @default("seo") // seo, summary, faq等
+  status          String   @default("draft") // draft, published
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+}
+
+// まとめ記事
+model SummaryArticle {
+  id        String   @id @default(cuid())
+  title     String   // タイトル
+  content   String   // 本文
+  area      String   // 対象地域
+  category  String   // 診療項目
+  clinicIds String   @default("[]") // JSONとして保存（対象医院ID）
+  metaTitle       String?  // SEOタイトル
+  metaDescription String?  // メタ説明
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 設定
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
