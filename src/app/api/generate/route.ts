@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // 医院固有の優先設定を取得
     const clinicTreatment = clinic.treatments.find(
-      (t) => t.category.name === treatmentCategory
+      (t: { category: { name: string } }) => t.category.name === treatmentCategory
     )
     const priorities = clinicTreatment
       ? JSON.parse(clinicTreatment.priorities || '[]')
