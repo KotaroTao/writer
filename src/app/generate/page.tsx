@@ -23,6 +23,7 @@ interface GeneratedContent {
   metaDescription?: string
   faq?: Array<{ question: string; answer: string }>
   wordCount?: number
+  outputFormat?: 'text' | 'html'
 }
 
 export default function GeneratePage() {
@@ -33,6 +34,7 @@ export default function GeneratePage() {
   const [streamingContent, setStreamingContent] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null)
+  const [currentOutputFormat, setCurrentOutputFormat] = useState<'text' | 'html'>('text')
 
   useEffect(() => {
     Promise.all([
@@ -49,6 +51,7 @@ export default function GeneratePage() {
     treatmentCategory: string
     keyword: string
     wordCount: number
+    outputFormat: 'text' | 'html'
     includeFaq?: boolean
     includeMetaInfo?: boolean
   }) => {
@@ -56,6 +59,7 @@ export default function GeneratePage() {
     setGeneratedContent(null)
     setStreamingContent('')
     setStatusMessage('記事を生成中...')
+    setCurrentOutputFormat(data.outputFormat)
 
     try {
       const response = await fetch('/api/generate/stream', {
@@ -124,9 +128,18 @@ export default function GeneratePage() {
     router.push(`/articles/${generatedContent.id}`)
   }
 
-  // Render content (streaming or final)
+  const handleCopy = () => {
+    const content = generatedContent?.content || streamingContent
+    if (content) {
+      navigator.clipboard.writeText(content)
+      alert('コピーしました')
+    }
+  }
+
+  // Render content based on output format
   const renderContent = () => {
     const content = generatedContent?.content || streamingContent
+    const format = generatedContent?.outputFormat || currentOutputFormat
 
     if (!content && !isLoading) {
       return (
@@ -139,9 +152,16 @@ export default function GeneratePage() {
       )
     }
 
-    // Extract title from streaming content
-    const titleMatch = content.match(/^#\s+(.+)$/m)
-    const title = generatedContent?.title || (titleMatch ? titleMatch[1] : '')
+    // Extract title based on format
+    let title: string = ''
+    if (format === 'html') {
+      const h1Match = content.match(/<h1[^>]*>(.+?)<\/h1>/i)
+      const h2Match = content.match(/<h2[^>]*>(.+?)<\/h2>/i)
+      title = generatedContent?.title || h1Match?.[1] || h2Match?.[1] || ''
+    } else {
+      const symbolMatch = content.match(/^[■◆●]\s*(.+)$/m)
+      title = generatedContent?.title || symbolMatch?.[1] || ''
+    }
 
     return (
       <div className="space-y-6">
@@ -150,6 +170,15 @@ export default function GeneratePage() {
           <div className="flex items-center gap-2 p-3 bg-dental-light rounded-lg text-dental">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-dental"></div>
             <span className="text-sm">{statusMessage}</span>
+          </div>
+        )}
+
+        {/* Output format badge */}
+        {(content || isLoading) && (
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-2 py-1 rounded ${format === 'html' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+              {format === 'html' ? 'HTML版' : 'テキスト版'}
+            </span>
           </div>
         )}
 
@@ -177,17 +206,20 @@ export default function GeneratePage() {
         {/* Main content */}
         <div>
           {title && <h2 className="text-xl font-bold mb-4">{title}</h2>}
-          <div
-            className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{
-              __html: content
-                .replace(/^#\s+.+$/m, '') // Remove title line
-                .replace(/## (.+)/g, '<h2 class="text-lg font-bold mt-6 mb-2">$1</h2>')
-                .replace(/### (.+)/g, '<h3 class="text-base font-semibold mt-4 mb-2">$1</h3>')
-                .replace(/\n\n/g, '</p><p class="mb-4">')
-                .replace(/\n/g, '<br>')
-            }}
-          />
+
+          {format === 'html' ? (
+            // HTML版: そのままHTMLとして表示
+            <div
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+          ) : (
+            // テキスト版: preタグで整形表示
+            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-gray-800">
+              {content}
+            </pre>
+          )}
+
           {isLoading && streamingContent && (
             <span className="animate-pulse">▊</span>
           )}
@@ -261,14 +293,24 @@ export default function GeneratePage() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>プレビュー</CardTitle>
-                {generatedContent?.id && (
-                  <button
-                    onClick={handleSave}
-                    className="text-sm text-dental hover:underline"
-                  >
-                    記事を確認
-                  </button>
-                )}
+                <div className="flex gap-2">
+                  {(generatedContent?.content || streamingContent) && (
+                    <button
+                      onClick={handleCopy}
+                      className="text-sm text-gray-500 hover:text-gray-700"
+                    >
+                      コピー
+                    </button>
+                  )}
+                  {generatedContent?.id && (
+                    <button
+                      onClick={handleSave}
+                      className="text-sm text-dental hover:underline"
+                    >
+                      記事を確認
+                    </button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="max-h-[70vh] overflow-y-auto">

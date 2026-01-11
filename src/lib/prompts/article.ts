@@ -1,15 +1,42 @@
 import type { Clinic, TreatmentCategory } from '@/types'
 
+export type OutputFormat = 'text' | 'html'
+
 export function buildArticlePrompt(
   clinic: Clinic,
   category: TreatmentCategory,
   keyword: string,
   wordCount: number,
-  priorities: string[]
+  priorities: string[],
+  outputFormat: OutputFormat = 'text'
 ): string {
   const priorityList = priorities.length > 0
     ? priorities.join('、')
     : category.defaultPriorities.join('、')
+
+  const formatInstructions = outputFormat === 'html'
+    ? `
+【出力形式: HTML】
+- WordPressやWebサイトに貼り付けて使えるHTMLで出力
+- <h2>、<h3>タグで見出しを構成
+- <p>タグで段落を作成
+- <ul><li>でリスト表示
+- <strong>で重要キーワードを強調
+- <div class="highlight">で特に伝えたいポイントを囲む
+- <table>タグで料金表や比較表を作成（該当する場合）
+- デザインしやすいセマンティックなHTML構造
+- インラインスタイルは使用しない（CSSで調整可能にする）
+`
+    : `
+【出力形式: テキスト】
+- プレーンテキストで出力
+- 見出しは「■」「◆」「●」などの記号で表現
+- 箇条書きは「・」で表現
+- 強調したい部分は【】で囲む
+- 区切り線は「━━━━━━━━━━━━」で表現
+- HTMLタグは一切使用しない
+- メールやSNS投稿にそのままコピペできる形式
+`
 
   return `
 以下の歯科医院について、SEO・MEO・LLMO対策を意識した記事を作成してください。
@@ -25,8 +52,14 @@ ${clinic.description ? `- 特徴: ${clinic.description}` : ''}
 【記事の条件】
 - 対策キーワード: ${keyword}
 - 診療項目: ${category.name}
-- 目標文字数: 約${wordCount}文字
+- 【重要】文字数: 最低${wordCount}文字以上（${Math.floor(wordCount * 1.2)}文字程度が理想）
 - 優先的に盛り込む内容: ${priorityList}
+
+【文字数の厳守について】
+- 必ず${wordCount}文字以上の記事を作成してください
+- 日本語の文字数でカウントします（スペースや改行を除く）
+- 各セクションを十分に詳しく書いてください
+- 短すぎる記事はSEO効果が低くなるため、指定文字数を必ず満たしてください
 
 【記事の構成】
 1. 導入部（キーワードと地域名を含む）
@@ -35,9 +68,8 @@ ${clinic.description ? `- 特徴: ${clinic.description}` : ''}
 4. 治療の流れ・料金目安
 5. 患者様へのメッセージ
 6. アクセス・予約情報
-
+${formatInstructions}
 【注意点】
-- H2、H3見出しを適切に使用
 - 読みやすい段落構成
 - 地域住民に寄り添った内容
 - 医院の専門性・信頼性をアピール
@@ -49,12 +81,31 @@ export function buildSummaryArticlePrompt(
   area: string,
   category: string,
   clinics: Clinic[],
-  count: number = 7
+  count: number = 7,
+  outputFormat: OutputFormat = 'text'
 ): string {
   const clinicList = clinics
     .slice(0, count)
     .map((c, i) => `${i + 1}. ${c.name}（${c.address}）${c.description ? `: ${c.description}` : ''}`)
     .join('\n')
+
+  const formatInstructions = outputFormat === 'html'
+    ? `
+【出力形式: HTML】
+- WordPressやWebサイトに貼り付けて使えるHTMLで出力
+- <h2>、<h3>タグで見出しを構成
+- <p>タグで段落を作成
+- <ul><li>でリスト表示
+- <table>タグで比較表を作成
+- <strong>で重要キーワードを強調
+`
+    : `
+【出力形式: テキスト】
+- プレーンテキストで出力
+- 見出しは「■」「◆」「●」などの記号で表現
+- 箇条書きは「・」で表現
+- HTMLタグは一切使用しない
+`
 
   return `
 「${area}で${category}がおすすめの歯科医院${count}選」というまとめ記事を作成してください。
@@ -72,7 +123,7 @@ ${clinicList}
    - 電話番号（該当する場合）
 4. 比較表（料金目安、特徴など）
 5. まとめ
-
+${formatInstructions}
 【注意点】
 - 各医院を公平に紹介
 - 医院ごとの特徴を明確に
