@@ -2,6 +2,36 @@ import type { Clinic, TreatmentCategory } from '@/types'
 
 export type OutputFormat = 'text' | 'html'
 
+// 日本語文字数に基づいて各セクションのガイドラインを生成
+function getSectionGuidelines(wordCount: number): string {
+  // 文字数に応じたセクション別の目安を計算
+  const sectionRatio = {
+    intro: 0.1,        // 導入部: 10%
+    overview: 0.2,     // 概要: 20%
+    features: 0.25,    // 特徴・強み: 25%
+    flow: 0.2,         // 治療の流れ: 20%
+    message: 0.15,     // メッセージ: 15%
+    access: 0.1,       // アクセス: 10%
+  }
+
+  const introWords = Math.ceil(wordCount * sectionRatio.intro)
+  const overviewWords = Math.ceil(wordCount * sectionRatio.overview)
+  const featuresWords = Math.ceil(wordCount * sectionRatio.features)
+  const flowWords = Math.ceil(wordCount * sectionRatio.flow)
+  const messageWords = Math.ceil(wordCount * sectionRatio.message)
+  const accessWords = Math.ceil(wordCount * sectionRatio.access)
+
+  return `
+【各セクションの目安文字数】
+1. 導入部: 約${introWords}文字
+2. 概要: 約${overviewWords}文字
+3. 特徴・強み: 約${featuresWords}文字（最も詳しく）
+4. 治療の流れ・料金: 約${flowWords}文字
+5. メッセージ: 約${messageWords}文字
+6. アクセス情報: 約${accessWords}文字
+合計: ${wordCount}文字以上`
+}
+
 export function buildArticlePrompt(
   clinic: Clinic,
   category: TreatmentCategory,
@@ -13,6 +43,10 @@ export function buildArticlePrompt(
   const priorityList = priorities.length > 0
     ? priorities.join('、')
     : category.defaultPriorities.join('、')
+
+  // 日本語はトークン効率が悪いため、目標を1.8倍に設定
+  const targetWordCount = Math.ceil(wordCount * 1.8)
+  const sectionGuidelines = getSectionGuidelines(wordCount)
 
   const formatInstructions = outputFormat === 'html'
     ? `
@@ -52,14 +86,30 @@ ${clinic.description ? `- 特徴: ${clinic.description}` : ''}
 【記事の条件】
 - 対策キーワード: ${keyword}
 - 診療項目: ${category.name}
-- 【重要】文字数: 最低${wordCount}文字以上（${Math.floor(wordCount * 1.2)}文字程度が理想）
 - 優先的に盛り込む内容: ${priorityList}
 
-【文字数の厳守について】
-- 必ず${wordCount}文字以上の記事を作成してください
-- 日本語の文字数でカウントします（スペースや改行を除く）
-- 各セクションを十分に詳しく書いてください
-- 短すぎる記事はSEO効果が低くなるため、指定文字数を必ず満たしてください
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【★★★ 最重要: 文字数について ★★★】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+あなたはこれから日本語の記事を書きます。
+ユーザーが指定した文字数は【${wordCount}文字】です。
+
+しかし、AIは日本語の文字数を過小にカウントする傾向があります。
+そのため、以下のルールを絶対に守ってください：
+
+1. 目標文字数: 【${targetWordCount}文字】を目指して執筆してください
+2. 最低文字数: 絶対に${wordCount}文字を下回らないでください
+3. 日本語のみでカウント（スペース、改行、記号は除外）
+
+${sectionGuidelines}
+
+【文字数を満たすためのテクニック】
+- 各段落は3〜5文で構成する
+- 具体例や事例を豊富に盛り込む
+- 「例えば」「具体的には」「また」などで内容を膨らませる
+- 患者さんの声や想定される質問への回答を含める
+- 治療のメリット・デメリットを詳しく説明する
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 【記事の構成】
 1. 導入部（キーワードと地域名を含む）
@@ -74,6 +124,10 @@ ${formatInstructions}
 - 地域住民に寄り添った内容
 - 医院の専門性・信頼性をアピール
 - 患者様の不安を解消する内容
+
+【最終確認】
+記事を書き終えたら、日本語文字数が${wordCount}文字以上あるか確認してください。
+足りない場合は、各セクションにさらに詳細を追加してください。
 `
 }
 

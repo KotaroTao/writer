@@ -13,10 +13,13 @@ const SYSTEM_PROMPT = `あなたは歯科医院のSEO・MEO・LLMO対策に特�
 - 適切な見出し構成（H2, H3）
 - 自然なキーワード配置
 
-【重要】指定された文字数を必ず満たしてください。
-- 指定文字数より短い記事は絶対に生成しないでください
-- 各セクションを詳細に、具体例を交えて書いてください
-- SEO効果を最大化するため、十分なボリュームの記事を作成してください`
+【★★★ 最重要: 日本語文字数について ★★★】
+あなたは日本語の文字数を正確にカウントできない傾向があります。
+そのため、プロンプトで指定される「目標文字数」を必ず満たすように執筆してください。
+- プロンプトに記載された目標文字数を絶対に下回らないこと
+- 各セクションを十分な長さで詳しく書くこと
+- 短すぎると感じたら、具体例や詳細説明を追加すること
+- 日本語の記事は、見た目より多くのトークンを消費するため、長めに書くこと`
 
 export async function generateContent(prompt: string): Promise<string> {
   const response = await openai.chat.completions.create({
@@ -39,9 +42,10 @@ export async function generateContent(prompt: string): Promise<string> {
 }
 
 export async function* generateContentStream(prompt: string, wordCount: number = 2000): AsyncGenerator<string, void, unknown> {
-  // 日本語は1文字あたり約1.5-2トークンを使用
-  // 余裕を持ってwordCount * 2.5でmax_tokensを計算（最小4000、最大16000）
-  const calculatedMaxTokens = Math.min(16000, Math.max(4000, Math.ceil(wordCount * 2.5)))
+  // 日本語は1文字あたり約2トークンを使用
+  // プロンプトでは1.8倍の目標文字数を設定しているため、それに対応するトークン数が必要
+  // wordCount * 1.8 * 2 = wordCount * 3.6、余裕を持って4倍で計算（最小6000、最大32000）
+  const calculatedMaxTokens = Math.min(32000, Math.max(6000, Math.ceil(wordCount * 4)))
 
   const stream = await openai.chat.completions.create({
     model: 'gpt-4',
