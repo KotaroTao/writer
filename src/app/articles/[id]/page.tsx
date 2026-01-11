@@ -7,6 +7,10 @@ import { ArticleSeoPanel } from '@/components/articles/article-seo-panel'
 import { prisma } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 
+// キャッシュを無効化して常に最新データを取得
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getArticle(id: string) {
   const article = await prisma.article.findUnique({
     where: { id },

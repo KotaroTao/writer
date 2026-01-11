@@ -3,6 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { prisma } from '@/lib/db'
 
+// キャッシュを無効化して常に最新データを取得
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getStats() {
   const [clinicCount, articleCount, summaryCount] = await Promise.all([
     prisma.clinic.count(),

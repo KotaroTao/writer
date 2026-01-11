@@ -4,6 +4,10 @@ import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 
+// キャッシュを無効化して常に最新データを取得
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getArticles() {
   return prisma.article.findMany({
     orderBy: { createdAt: 'desc' },

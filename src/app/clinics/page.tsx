@@ -4,6 +4,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/db'
 
+// キャッシュを無効化して常に最新データを取得
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getClinics() {
   return prisma.clinic.findMany({
     orderBy: { createdAt: 'desc' },
