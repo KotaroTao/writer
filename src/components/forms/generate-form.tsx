@@ -70,6 +70,7 @@ export function GenerateForm({
     { value: '150', label: '150文字（短文）' },
     { value: '500', label: '500文字' },
     { value: '1000', label: '1000文字' },
+    { value: '1300', label: '1300文字（Instagram）' },
     { value: '1500', label: '1500文字（標準）' },
     { value: '2000', label: '2000文字' },
     { value: '3000', label: '3000文字' },
