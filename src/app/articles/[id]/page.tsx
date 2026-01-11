@@ -82,7 +82,7 @@ export default async function ArticleDetailPage({
         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
           {article.clinic && <span>{article.clinic.name}</span>}
           {'area' in article && article.area && <span>{article.area}</span>}
-          <span>{article.wordCount}文字</span>
+          {'wordCount' in article && article.wordCount && <span>{article.wordCount}文字</span>}
           <span>{formatDate(article.createdAt)}</span>
         </div>
       </div>
