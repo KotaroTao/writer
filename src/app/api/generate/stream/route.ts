@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateContentStream, generateMetaInfo, generateFaq } from '@/lib/openai'
-import { buildArticlePrompt } from '@/lib/prompts/article'
+import { buildArticlePrompt, OutputFormat } from '@/lib/prompts/article'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clinicId, treatmentCategory, keyword, wordCount, includeFaq, includeMetaInfo } = body
+    const { clinicId, treatmentCategory, keyword, wordCount, outputFormat, includeFaq, includeMetaInfo } = body
 
     // 医院情報を取得
     const clinic = await prisma.clinic.findUnique({
@@ -48,13 +48,17 @@ export async function POST(request: NextRequest) {
       ? JSON.parse(clinicTreatment.priorities || '[]')
       : JSON.parse(category.defaultPriorities || '[]')
 
+    // 出力形式（デフォルトはtext）
+    const format: OutputFormat = outputFormat === 'html' ? 'html' : 'text'
+
     // プロンプトを構築
     const prompt = buildArticlePrompt(
       clinic,
       { ...category, defaultPriorities: JSON.parse(category.defaultPriorities || '[]') },
       keyword,
       wordCount,
-      priorities
+      priorities,
+      format
     )
 
     // ストリーミングレスポンスを作成
@@ -70,11 +74,19 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', chunk })}\n\n`))
           }
 
-          // タイトルを抽出
-          const titleMatch = fullContent.match(/^#\s+(.+)$/m)
-          const title = titleMatch
-            ? titleMatch[1]
-            : `${clinic.targetArea || ''}${keyword}｜${clinic.name}`
+          // タイトルを抽出（形式に応じて）
+          let title: string
+          if (format === 'html') {
+            // HTML形式: <h1>または<h2>タグからタイトルを抽出
+            const h1Match = fullContent.match(/<h1[^>]*>(.+?)<\/h1>/i)
+            const h2Match = fullContent.match(/<h2[^>]*>(.+?)<\/h2>/i)
+            title = h1Match?.[1] || h2Match?.[1] || `${clinic.targetArea || ''}${keyword}｜${clinic.name}`
+          } else {
+            // テキスト形式: ■マークや最初の行からタイトルを抽出
+            const symbolMatch = fullContent.match(/^[■◆●]\s*(.+)$/m)
+            const firstLineMatch = fullContent.match(/^(.+)$/m)
+            title = symbolMatch?.[1] || firstLineMatch?.[1]?.substring(0, 60) || `${clinic.targetArea || ''}${keyword}｜${clinic.name}`
+          }
 
           // メタ情報を生成（オプション）
           let metaTitle: string | undefined
@@ -105,7 +117,7 @@ export async function POST(request: NextRequest) {
               metaDescription,
               keywords: JSON.stringify([keyword]),
               wordCount: fullContent.replace(/\s/g, '').length,
-              articleType: 'seo',
+              articleType: format === 'html' ? 'seo-html' : 'seo',
               status: 'draft',
             },
           })
@@ -121,6 +133,7 @@ export async function POST(request: NextRequest) {
               metaDescription,
               faq,
               wordCount: article.wordCount,
+              outputFormat: format,
             },
           })}\n\n`))
 

@@ -11,7 +11,8 @@ const generateSchema = z.object({
   clinicId: z.string().min(1, '医院を選択してください'),
   treatmentCategory: z.string().min(1, '診療項目を選択してください'),
   keyword: z.string().min(1, 'キーワードを入力してください'),
-  wordCount: z.coerce.number().min(150).max(10000),
+  wordCount: z.coerce.number().min(150).max(20000),
+  outputFormat: z.enum(['text', 'html']),
   includeFaq: z.boolean().optional(),
   includeMetaInfo: z.boolean().optional(),
 })
@@ -48,7 +49,8 @@ export function GenerateForm({
   } = useForm<GenerateFormData>({
     resolver: zodResolver(generateSchema),
     defaultValues: {
-      wordCount: 2000,
+      wordCount: 1500,
+      outputFormat: 'text',
       includeFaq: true,
       includeMetaInfo: true,
     },
@@ -68,10 +70,17 @@ export function GenerateForm({
     { value: '150', label: '150文字（短文）' },
     { value: '500', label: '500文字' },
     { value: '1000', label: '1000文字' },
-    { value: '2000', label: '2000文字（標準）' },
+    { value: '1500', label: '1500文字（標準）' },
+    { value: '2000', label: '2000文字' },
     { value: '3000', label: '3000文字' },
     { value: '5000', label: '5000文字' },
-    { value: '10000', label: '10000文字（長文）' },
+    { value: '10000', label: '10000文字' },
+    { value: '20000', label: '20000文字（長文）' },
+  ]
+
+  const outputFormatOptions = [
+    { value: 'text', label: 'テキスト版（プレーンテキスト）' },
+    { value: 'html', label: 'HTML版（WordPress等向け）' },
   ]
 
   return (
@@ -103,6 +112,21 @@ export function GenerateForm({
         error={errors.wordCount?.message}
         {...register('wordCount')}
       />
+
+      <Select
+        label="出力形式"
+        options={outputFormatOptions}
+        error={errors.outputFormat?.message}
+        {...register('outputFormat')}
+      />
+
+      <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
+        <p className="font-medium mb-1">出力形式について:</p>
+        <ul className="space-y-1 ml-2">
+          <li>• <strong>テキスト版</strong>: シンプルな文字だけの形式。メールやSNS投稿に最適</li>
+          <li>• <strong>HTML版</strong>: WordPressなどに貼り付けて見栄えの良いページが作成可能</li>
+        </ul>
+      </div>
 
       <div className="space-y-3">
         <label className="flex items-center space-x-3">
