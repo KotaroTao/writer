@@ -25,15 +25,21 @@ export default function NewClinicPage() {
         body: JSON.stringify(data),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to create clinic')
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to create clinic')
       }
 
-      router.push('/clinics')
+      // 成功メッセージを表示
+      alert(`「${data.name}」を登録しました`)
+
+      // ページを更新してから遷移
       router.refresh()
+      router.push('/clinics')
     } catch (error) {
       console.error(error)
-      alert('医院の登録に失敗しました')
+      alert('医院の登録に失敗しました。もう一度お試しください。')
     } finally {
       setIsLoading(false)
     }
