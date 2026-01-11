@@ -70,6 +70,9 @@ export default async function ClinicsPage() {
                     <Link href={`/clinics/${clinic.id}/treatments`}>
                       <Button variant="outline" size="sm">診療設定</Button>
                     </Link>
+                    <Link href={`/clinics/${clinic.id}/director-samples`}>
+                      <Button variant="outline" size="sm">院長モード</Button>
+                    </Link>
                   </div>
                 </div>
               </CardHeader>

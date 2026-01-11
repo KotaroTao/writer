@@ -9,10 +9,19 @@ export async function GET() {
         treatments: {
           include: { category: true },
         },
+        _count: {
+          select: { directorSamples: true },
+        },
       },
     })
 
-    return NextResponse.json({ success: true, data: clinics })
+    // hasDirectorSamplesを追加
+    const clinicsWithSampleInfo = clinics.map((clinic: typeof clinics[number]) => ({
+      ...clinic,
+      hasDirectorSamples: clinic._count.directorSamples > 0,
+    }))
+
+    return NextResponse.json({ success: true, data: clinicsWithSampleInfo })
   } catch (error) {
     console.error('Failed to fetch clinics:', error)
     return NextResponse.json(

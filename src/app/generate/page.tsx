@@ -8,6 +8,7 @@ import { GenerateForm } from '@/components/forms/generate-form'
 interface Clinic {
   id: string
   name: string
+  hasDirectorSamples?: boolean
 }
 
 interface TreatmentCategory {
@@ -52,6 +53,7 @@ export default function GeneratePage() {
     keyword: string
     wordCount: number
     outputFormat: 'text' | 'html'
+    articleStyle: 'standard' | 'director'
     includeFaq?: boolean
     includeMetaInfo?: boolean
   }) => {

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateContentStream, generateMetaInfo, generateFaq } from '@/lib/openai'
-import { buildArticlePrompt, OutputFormat } from '@/lib/prompts/article'
+import { buildArticlePrompt, buildDirectorModePrompt, OutputFormat } from '@/lib/prompts/article'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,15 +9,16 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clinicId, treatmentCategory, keyword, wordCount, outputFormat, includeFaq, includeMetaInfo } = body
+    const { clinicId, treatmentCategory, keyword, wordCount, outputFormat, articleStyle, includeFaq, includeMetaInfo } = body
 
-    // 医院情報を取得
+    // 医院情報を取得（院長サンプルも含む）
     const clinic = await prisma.clinic.findUnique({
       where: { id: clinicId },
       include: {
         treatments: {
           include: { category: true },
         },
+        directorSamples: true,
       },
     })
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     // clinicオブジェクトを型に合わせて変換
     const clinicForPrompt = {
       ...clinic,
-      treatments: clinic.treatments.map((t) => ({
+      treatments: clinic.treatments.map((t: typeof clinic.treatments[number]) => ({
         ...t,
         priorities: JSON.parse(t.priorities || '[]') as string[],
         category: {
@@ -64,15 +65,28 @@ export async function POST(request: NextRequest) {
       })),
     }
 
-    // プロンプトを構築
-    const prompt = buildArticlePrompt(
-      clinicForPrompt,
-      { ...category, defaultPriorities: JSON.parse(category.defaultPriorities || '[]') },
-      keyword,
-      wordCount,
-      priorities,
-      format
-    )
+    // プロンプトを構築（院長モードの場合はサンプルを使用）
+    const useDirectorMode = articleStyle === 'director' && clinic.directorSamples.length > 0
+    const categoryWithPriorities = { ...category, defaultPriorities: JSON.parse(category.defaultPriorities || '[]') }
+
+    const prompt = useDirectorMode
+      ? buildDirectorModePrompt(
+          clinicForPrompt,
+          categoryWithPriorities,
+          keyword,
+          wordCount,
+          priorities,
+          clinic.directorSamples.map((s: typeof clinic.directorSamples[number]) => ({ title: s.title, content: s.content })),
+          format
+        )
+      : buildArticlePrompt(
+          clinicForPrompt,
+          categoryWithPriorities,
+          keyword,
+          wordCount,
+          priorities,
+          format
+        )
 
     // ストリーミングレスポンスを作成
     const encoder = new TextEncoder()
@@ -120,6 +134,12 @@ export async function POST(request: NextRequest) {
             faq = await generateFaq(clinic.name, treatmentCategory, keyword)
           }
 
+          // 記事タイプを決定（院長モードの場合は -director サフィックスを追加）
+          let articleType = format === 'html' ? 'seo-html' : 'seo'
+          if (useDirectorMode) {
+            articleType += '-director'
+          }
+
           // 記事をデータベースに保存
           const article = await prisma.article.create({
             data: {
@@ -130,7 +150,7 @@ export async function POST(request: NextRequest) {
               metaDescription,
               keywords: JSON.stringify([keyword]),
               wordCount: fullContent.replace(/\s/g, '').length,
-              articleType: format === 'html' ? 'seo-html' : 'seo',
+              articleType,
               status: 'draft',
             },
           })

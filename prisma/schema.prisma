@@ -19,8 +19,9 @@ model Clinic {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  treatments ClinicTreatment[]
-  articles   Article[]
+  treatments      ClinicTreatment[]
+  articles        Article[]
+  directorSamples DirectorSample[]
 }
 
 // 診療項目カテゴリ
@@ -90,4 +91,17 @@ model Setting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// 院長サンプル記事（院長モード用）
+model DirectorSample {
+  id        String   @id @default(cuid())
+  clinicId  String
+  title     String   // サンプル記事タイトル
+  content   String   // サンプル記事本文
+  note      String?  // メモ（任意）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 }
