@@ -15,6 +15,8 @@ async function getClinics() {
   })
 }
 
+type ClinicWithTreatments = Awaited<ReturnType<typeof getClinics>>[number]
+
 export default async function ClinicsPage() {
   const clinics = await getClinics()
 
@@ -49,7 +51,7 @@ export default async function ClinicsPage() {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {clinics.map((clinic) => (
+          {clinics.map((clinic: ClinicWithTreatments) => (
             <Card key={clinic.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -91,12 +93,12 @@ export default async function ClinicsPage() {
                   <div>
                     <p className="text-gray-500">診療項目</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {clinic.treatments.filter(t => t.enabled).map((treatment) => (
+                      {clinic.treatments.filter((t: { enabled: boolean }) => t.enabled).map((treatment: { id: string; category: { name: string } }) => (
                         <Badge key={treatment.id} variant="info">
                           {treatment.category.name}
                         </Badge>
                       ))}
-                      {clinic.treatments.filter(t => t.enabled).length === 0 && (
+                      {clinic.treatments.filter((t: { enabled: boolean }) => t.enabled).length === 0 && (
                         <span className="text-gray-400">未設定</span>
                       )}
                     </div>

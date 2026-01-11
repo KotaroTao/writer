@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { ArticleActions } from '@/components/articles/article-actions'
 import { prisma } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 
@@ -43,13 +43,22 @@ export default async function ArticleDetailPage({
         >
           &larr; 記事一覧に戻る
         </Link>
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant={article.type === 'summary' ? 'info' : 'default'}>
-            {article.type === 'summary' ? 'まとめ' : 'SEO記事'}
-          </Badge>
-          <Badge variant={article.status === 'published' ? 'success' : 'warning'}>
-            {article.status === 'published' ? '公開中' : '下書き'}
-          </Badge>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Badge variant={article.type === 'summary' ? 'info' : 'default'}>
+              {article.type === 'summary' ? 'まとめ' : 'SEO記事'}
+            </Badge>
+            <Badge variant={article.status === 'published' ? 'success' : 'warning'}>
+              {article.status === 'published' ? '公開中' : '下書き'}
+            </Badge>
+          </div>
+          {article.type === 'article' && (
+            <ArticleActions
+              articleId={article.id}
+              content={article.content}
+              status={article.status}
+            />
+          )}
         </div>
         <h1 className="text-2xl font-bold text-gray-900">{article.title}</h1>
         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
@@ -84,26 +93,15 @@ export default async function ArticleDetailPage({
 
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>本文</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(article.content)
-              }}
-            >
-              コピー
-            </Button>
-          </div>
+          <CardTitle>本文</CardTitle>
         </CardHeader>
         <CardContent>
           <div
             className="prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{
               __html: article.content
-                .replace(/## /g, '<h2 class="text-xl font-bold mt-6 mb-3">')
-                .replace(/### /g, '<h3 class="text-lg font-semibold mt-4 mb-2">')
+                .replace(/## (.+)/g, '<h2 class="text-xl font-bold mt-6 mb-3">$1</h2>')
+                .replace(/### (.+)/g, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
                 .replace(/\n\n/g, '</p><p class="mb-4">')
                 .replace(/\n/g, '<br>')
             }}
@@ -113,10 +111,10 @@ export default async function ArticleDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>HTMLソース</CardTitle>
+          <CardTitle>HTMLソース（マークダウン）</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="text-xs bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+          <pre className="text-xs bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
             <code>{article.content}</code>
           </pre>
         </CardContent>

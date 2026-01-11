@@ -17,6 +17,9 @@ async function getSummaryArticles() {
   })
 }
 
+type ArticleWithClinic = Awaited<ReturnType<typeof getArticles>>[number]
+type SummaryArticleType = Awaited<ReturnType<typeof getSummaryArticles>>[number]
+
 export default async function ArticlesPage() {
   const [articles, summaryArticles] = await Promise.all([
     getArticles(),
@@ -24,8 +27,8 @@ export default async function ArticlesPage() {
   ])
 
   const allArticles = [
-    ...articles.map((a) => ({ ...a, type: 'article' as const })),
-    ...summaryArticles.map((a) => ({ ...a, type: 'summary' as const, clinic: null })),
+    ...articles.map((a: ArticleWithClinic) => ({ ...a, type: 'article' as const })),
+    ...summaryArticles.map((a: SummaryArticleType) => ({ ...a, type: 'summary' as const, clinic: null })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return (
