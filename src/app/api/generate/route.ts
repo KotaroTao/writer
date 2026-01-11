@@ -45,9 +45,22 @@ export async function POST(request: NextRequest) {
       ? JSON.parse(clinicTreatment.priorities || '[]')
       : JSON.parse(category.defaultPriorities || '[]')
 
+    // clinicオブジェクトを型に合わせて変換
+    const clinicForPrompt = {
+      ...clinic,
+      treatments: clinic.treatments.map((t) => ({
+        ...t,
+        priorities: JSON.parse(t.priorities || '[]') as string[],
+        category: {
+          ...t.category,
+          defaultPriorities: JSON.parse(t.category.defaultPriorities || '[]') as string[],
+        },
+      })),
+    }
+
     // プロンプトを構築
     const prompt = buildArticlePrompt(
-      clinic,
+      clinicForPrompt,
       { ...category, defaultPriorities: JSON.parse(category.defaultPriorities || '[]') },
       keyword,
       wordCount,
