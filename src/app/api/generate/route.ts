@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     // clinicオブジェクトを型に合わせて変換
     const clinicForPrompt = {
       ...clinic,
-      treatments: clinic.treatments.map((t) => ({
+      treatments: clinic.treatments.map((t: typeof clinic.treatments[number]) => ({
         ...t,
         priorities: JSON.parse(t.priorities || '[]') as string[],
         category: {

@@ -208,6 +208,137 @@ ${formatInstructions}
 `
 }
 
+// 院長サンプル記事の型
+interface DirectorSample {
+  title: string
+  content: string
+}
+
+// 院長モード用プロンプト
+export function buildDirectorModePrompt(
+  clinic: Clinic,
+  category: TreatmentCategory,
+  keyword: string,
+  wordCount: number,
+  priorities: string[],
+  samples: DirectorSample[],
+  outputFormat: OutputFormat = 'text'
+): string {
+  const priorityList = priorities.length > 0
+    ? priorities.join('、')
+    : category.defaultPriorities.join('、')
+
+  // 日本語はトークン効率が悪いため、目標を1.8倍に設定
+  const targetWordCount = Math.ceil(wordCount * 1.8)
+  const sectionGuidelines = getSectionGuidelines(wordCount)
+
+  // サンプル記事を学習用に整形
+  const sampleTexts = samples.map((s, i) => `
+【サンプル${i + 1}: ${s.title}】
+${s.content.substring(0, 2000)}${s.content.length > 2000 ? '...(以下省略)' : ''}
+`).join('\n')
+
+  const formatInstructions = outputFormat === 'html'
+    ? `
+【出力形式: HTML】
+- WordPressやWebサイトに貼り付けて使えるHTMLで出力
+- <h2>、<h3>タグで見出しを構成
+- <p>タグで段落を作成
+- <ul><li>でリスト表示
+- <strong>で重要キーワードを強調
+- インラインスタイルは使用しない
+`
+    : `
+【出力形式: テキスト】
+- プレーンテキストで出力
+- 見出しは「■」で表現
+- 小見出しは「◆」で表現
+- 箇条書きは「・」で表現
+- HTMLタグは一切使用しない
+- 区切り線は使用しない
+`
+
+  return `
+あなたは歯科医院の院長になりきってSEO記事を執筆するライターです。
+
+【最重要】
+以下のサンプル記事は、この医院の院長が実際に書いた文章です。
+この文体・語調・言い回しを徹底的に模倣して新しい記事を作成してください。
+
+${sampleTexts}
+
+【文体分析のポイント】
+上記サンプルから以下を分析し、同じスタイルで書いてください：
+- 一人称の使い方（私、当院、医院長として等）
+- 文末表現（です・ます調 or だ・である調）
+- 読者への呼びかけ方
+- 専門用語の説明の仕方
+- 段落の長さ、文の長さ
+- 特徴的な言い回しやフレーズ
+
+【医院情報】
+- 医院名: ${clinic.name}
+- 住所: ${clinic.address}
+- 電話番号: ${clinic.phone}
+- ホームページ: ${clinic.url}
+${clinic.targetArea ? `- 対策地域: ${clinic.targetArea}` : ''}
+${clinic.description ? `- 特徴: ${clinic.description}` : ''}
+
+【記事の条件】
+- 対策キーワード: ${keyword}
+- 診療項目: ${category.name}
+- 優先的に盛り込む内容: ${priorityList}
+
+【文字数について】
+目標文字数: ${targetWordCount}文字以上
+最低文字数: ${wordCount}文字（これを下回らないこと）
+
+${sectionGuidelines}
+
+【SEO要件（必須）】
+記事には以下のSEO要素を自然に含めてください：
+1. タイトルと見出しにキーワードを含める
+2. 地域名（${clinic.targetArea || '対策地域'}）を適切に散りばめる
+3. ${category.name}に関する専門的かつ信頼性のある情報
+4. 患者さんの疑問に答える内容構成
+5. 医院の強みや特徴を具体的に紹介
+
+【絶対に避けるべきAI的表現】
+以下の表現は絶対に使わないでください：
+× 「いかがでしたでしょうか」
+× 「〜ではないでしょうか」（疑問を投げかける形）
+× 「〜について解説します」「〜をご紹介します」（説明口調）
+× 「あなたが〜するとき」（読者への過度な語りかけ）
+× 「それでは」「さて」（接続詞の多用）
+× 「ぜひ〜してみてください」（押し付けがましい表現）
+× 「〜の方も多いのではないでしょうか」
+× 「まず結論から言うと」
+× 「■導入部」「■概要」などの内部ラベル
+
+【自然な文章のコツ】
+○ 院長の経験や思いを率直に書く
+○ 患者さんとの実際のやりとりを想起させる
+○ 専門家としての見解を示す
+○ 地域の特性や患者層に触れる
+○ 具体的なエピソードや数字を使う
+${formatInstructions}
+
+【記事の構成例】
+1. 導入（見出しなし）- 自然な書き出しで始める
+2. ${category.name}について - 専門家の視点で説明
+3. 当院の${category.name}の特徴 - 具体的な強み
+4. 治療の流れと費用 - 患者目線で分かりやすく
+5. 院長からのメッセージ - 個人的な思い
+6. アクセス情報
+
+【最終チェック】
+- サンプル記事の文体と一致しているか
+- AI的な定型表現が含まれていないか
+- ${wordCount}文字以上あるか
+- SEO要素が自然に盛り込まれているか
+`
+}
+
 export function buildFaqPrompt(
   clinic: Clinic,
   category: string,
