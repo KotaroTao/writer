@@ -101,15 +101,54 @@ cd /var/www/dental-seo && git pull && npm install && npm run build && pm2 restar
 
 ## 今後の開発予定
 
-- [ ] ツール名を「歯科SEOの達人」に変更（UI反映）
+- [x] ツール名を「歯科SEOの達人」に変更（UI反映）✅ 完了
+- [x] 1300文字（Instagram）オプション追加 ✅ 完了
+- [x] テキスト版/HTML版の出力形式選択 ✅ 完了
+- [x] 日本語文字数の改善（目標1.8倍設定） ✅ 完了
 - [ ] 競合分析機能
 - [ ] キーワード提案機能
 - [ ] SEOスコア表示
 - [ ] 記事履歴のバージョン管理
 - [ ] 口コミ・レビュー活用機能
 
+## 重要な技術的注意事項
+
+### Prismaバージョン固定（重要）
+```json
+"@prisma/client": "5.22.0",
+"prisma": "5.22.0"
+```
+- **Prisma 7.xは使用禁止**（スキーマの書き方が変わり互換性がない）
+- `^`を付けるとnpm installで自動更新されるので固定バージョンを使用
+
+### VPS手動デプロイ時の注意
+GitHub Actionsが失敗した場合、VPSで手動デプロイが必要：
+```bash
+ssh root@210.131.223.161
+cd /var/www/dental-seo
+git fetch origin && git reset --hard origin/main
+npm install prisma@5 @prisma/client@5  # Prisma 5.x を明示的にインストール
+npx prisma generate
+npm run build
+pm2 restart dental-seo
+```
+
+### 型エラーについて
+- `clinic`オブジェクトをAPIで使う際は型変換が必要
+- `priorities`がDBではstring、型定義ではstring[]のため`JSON.parse()`で変換
+- 参考: `src/app/api/generate/stream/route.ts:54-65`
+
+### 記事生成プロンプト
+- 日本語文字数はGPT-4が正確にカウントできないため、目標を1.8倍に設定
+- `src/lib/prompts/article.ts`でプロンプトを管理
+- max_tokensは`wordCount * 4`で計算（`src/lib/openai.ts:45`）
+
 ## 注意事項
 
 - DNS: tao-dx.comはエックスサーバーVPSのネームサーバーを使用
 - バリュードメインのDNS設定は無効（エックスサーバーVPS側で設定）
 - SSL証明書: Let's Encrypt（certbot自動更新）
+
+## 最終更新
+
+- 2026-01-11: 文字数オプション追加、出力形式選択、プロンプト改善、Prismaバージョン固定
