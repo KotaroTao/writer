@@ -3,7 +3,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Dental SEO Generator - コンテンツSEO自動生成',
+  title: '歯科SEOの達人 - コンテンツSEO自動生成',
   description: '歯科医院向けのSEO・MEO・LLMO対策コンテンツを自動生成するツール',
 }
 
