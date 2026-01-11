@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
         let fullContent = ''
 
         try {
-          // コンテンツをストリーミング
-          for await (const chunk of generateContentStream(prompt)) {
+          // コンテンツをストリーミング（wordCountを渡してmax_tokensを動的に設定）
+          for await (const chunk of generateContentStream(prompt, wordCount)) {
             fullContent += chunk
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', chunk })}\n\n`))
           }

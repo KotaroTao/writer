@@ -4,14 +4,19 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-const SYSTEM_PROMPT = `あなたは歯科医院のSEO・MEO・LLMO対策に特化したコンテンツライターです。
+const SYSTEM_PROMPT = `あなたは歯科医院のSEO・MEO・LLMO対策に特化したプロのコンテンツライターです。
 以下の点を重視して記事を作成してください：
 - E-E-A-T（経験・専門性・権威性・信頼性）を意識した構成
 - 読みやすく、患者さん目線で分かりやすい文章
 - 医院の特徴や強みを自然に盛り込む
 - 地域性を活かしたローカルSEO対策
 - 適切な見出し構成（H2, H3）
-- 自然なキーワード配置`
+- 自然なキーワード配置
+
+【重要】指定された文字数を必ず満たしてください。
+- 指定文字数より短い記事は絶対に生成しないでください
+- 各セクションを詳細に、具体例を交えて書いてください
+- SEO効果を最大化するため、十分なボリュームの記事を作成してください`
 
 export async function generateContent(prompt: string): Promise<string> {
   const response = await openai.chat.completions.create({
@@ -33,7 +38,11 @@ export async function generateContent(prompt: string): Promise<string> {
   return response.choices[0]?.message?.content || ''
 }
 
-export async function* generateContentStream(prompt: string): AsyncGenerator<string, void, unknown> {
+export async function* generateContentStream(prompt: string, wordCount: number = 2000): AsyncGenerator<string, void, unknown> {
+  // 日本語は1文字あたり約1.5-2トークンを使用
+  // 余裕を持ってwordCount * 2.5でmax_tokensを計算（最小4000、最大16000）
+  const calculatedMaxTokens = Math.min(16000, Math.max(4000, Math.ceil(wordCount * 2.5)))
+
   const stream = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
@@ -47,7 +56,7 @@ export async function* generateContentStream(prompt: string): AsyncGenerator<str
       },
     ],
     temperature: 0.7,
-    max_tokens: 4000,
+    max_tokens: calculatedMaxTokens,
     stream: true,
   })
 
