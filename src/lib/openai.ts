@@ -4,20 +4,22 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-export async function generateContent(prompt: string): Promise<string> {
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4',
-    messages: [
-      {
-        role: 'system',
-        content: `あなたは歯科医院のSEO・MEO・LLMO対策に特化したコンテンツライターです。
+const SYSTEM_PROMPT = `あなたは歯科医院のSEO・MEO・LLMO対策に特化したコンテンツライターです。
 以下の点を重視して記事を作成してください：
 - E-E-A-T（経験・専門性・権威性・信頼性）を意識した構成
 - 読みやすく、患者さん目線で分かりやすい文章
 - 医院の特徴や強みを自然に盛り込む
 - 地域性を活かしたローカルSEO対策
 - 適切な見出し構成（H2, H3）
-- 自然なキーワード配置`,
+- 自然なキーワード配置`
+
+export async function generateContent(prompt: string): Promise<string> {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      {
+        role: 'system',
+        content: SYSTEM_PROMPT,
       },
       {
         role: 'user',
@@ -29,6 +31,32 @@ export async function generateContent(prompt: string): Promise<string> {
   })
 
   return response.choices[0]?.message?.content || ''
+}
+
+export async function* generateContentStream(prompt: string): AsyncGenerator<string, void, unknown> {
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      {
+        role: 'system',
+        content: SYSTEM_PROMPT,
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 4000,
+    stream: true,
+  })
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content
+    if (content) {
+      yield content
+    }
+  }
 }
 
 export async function generateMetaInfo(

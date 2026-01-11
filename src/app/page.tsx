@@ -21,6 +21,8 @@ async function getRecentArticles() {
   })
 }
 
+type RecentArticle = Awaited<ReturnType<typeof getRecentArticles>>[number]
+
 export default async function DashboardPage() {
   const stats = await getStats()
   const recentArticles = await getRecentArticles()
@@ -130,7 +132,7 @@ export default async function DashboardPage() {
               <p className="text-sm text-gray-500">まだ記事がありません</p>
             ) : (
               <ul className="space-y-3">
-                {recentArticles.map((article) => (
+                {recentArticles.map((article: RecentArticle) => (
                   <li key={article.id}>
                     <Link
                       href={`/articles/${article.id}`}
