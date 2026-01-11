@@ -146,7 +146,7 @@ export default async function DashboardPage() {
                         {article.title}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {article.clinic?.name} ・ {article.wordCount}文字
+                        {article.clinic?.name}{'wordCount' in article && article.wordCount && ` ・ ${article.wordCount}文字`}
                       </p>
                     </Link>
                   </li>

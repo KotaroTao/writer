@@ -87,7 +87,7 @@ export default async function ArticlesPage() {
                       {'area' in article && article.area && (
                         <span>{article.area}</span>
                       )}
-                      <span>{article.wordCount}文字</span>
+                      {'wordCount' in article && article.wordCount && <span>{article.wordCount}文字</span>}
                       <span>{formatDate(article.createdAt)}</span>
                     </div>
                   </div>

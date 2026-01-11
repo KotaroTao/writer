@@ -70,7 +70,7 @@ export function Sidebar() {
       <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-4">
-            <span className="text-xl font-bold text-dental">Dental SEO</span>
+            <span className="text-xl font-bold text-dental">歯科SEOの達人</span>
           </div>
           <nav className="mt-8 flex-1 px-2 space-y-1">
             {navigation.map((item) => {
